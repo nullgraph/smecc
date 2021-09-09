@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+ "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <meta name="author" content="Ha T. Lam" />
+  <meta name="date" content="2021-08-24" />
+  <title>smecc (a small ECC library)</title>
+  <style type="text/css">
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" type="text/css" media="screen, projection, print"
+    href="https://www.w3.org/Talks/Tools/Slidy2/styles/slidy.css" />
+  <script src="https://www.w3.org/Talks/Tools/Slidy2/scripts/slidy.js"
+    charset="utf-8" type="text/javascript"></script>
+</head>
+<body>
+<div class="slide titlepage">
+  <h1 class="title">smecc (a small ECC library)</h1>
+  <p class="author">
+Ha T. Lam
+  </p>
+  <p class="date">August 24, 2021</p>
+</div>
+<div id="previous-research" class="slide section level1">
+<h1>Previous Research</h1>
+<ul class="incremental">
+<li>Full Homomorphic Encryption library using ring homomorphism.</li>
+<li>Implementation of Pailliers with tricks:
+<ul class="incremental">
+<li>Reduced modulus: from <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20n%5E2" alt="n^2" title="n^2" class="math inline" /> to <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20p%5E2" alt="p^2" title="p^2" class="math inline" /> and <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20q%5E2" alt="q^2" title="q^2" class="math inline" /></li>
+<li>Further reduced modulus: from <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20p%5E2" alt="p^2" title="p^2" class="math inline" /> to <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20p" alt="p" title="p" class="math inline" />, <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20q%5E2" alt="q^2" title="q^2" class="math inline" /> to <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20q" alt="q" title="q" class="math inline" /></li>
+<li>Precompute powers of <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20g" alt="g" title="g" class="math inline" />, the generator</li>
+<li>Precompute the noise</li>
+</ul></li>
+</ul>
+</div>
+<div id="why-smecc" class="slide section level1">
+<h1>Why smecc?</h1>
+<ul class="incremental">
+<li>Learning purpose</li>
+<li>Golang ECC lib doesn’t allow parameter changes</li>
+<li>E.g. curve <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20y%5E2%3Dx%5E2%2BAx%2BB" alt="y^2=x^2+Ax+B" title="y^2=x^2+Ax+B" class="math inline" /> has <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20A%3D-3" alt="A=-3" title="A=-3" class="math inline" /> per NIST</li>
+</ul>
+</div>
+<div id="add-two-points" class="slide section level1">
+<h1>Add Two Points</h1>
+<p>Given <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20P_1" alt="P_1" title="P_1" class="math inline" /> and <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20P_2" alt="P_2" title="P_2" class="math inline" /> on the curve, want to find <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20P_3%20%3D%20P_1%2BP_2" alt="P_3 = P_1+P_2" title="P_3 = P_1+P_2" class="math inline" />.</p>
+<ul class="incremental">
+<li>If <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20P_1%20%5Cneq%20P_2" alt="P_1 \neq P_2" title="P_1 \neq P_2" class="math inline" />, find slope <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20%5Clambda" alt="\lambda" title="\lambda" class="math inline" /> of line <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20L" alt="L" title="L" class="math inline" /> that goes through the two points, <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20%5Clambda%20%3D%20%5Cfrac%7By_2-y_1%7D%7Bx_2-x_1%7D" alt="\lambda = \frac{y_2-y_1}{x_2-x_1}" title="\lambda = \frac{y_2-y_1}{x_2-x_1}" class="math inline" /></li>
+<li>If <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20P_1%20%3D%20P_2" alt="P_1 = P_2" title="P_1 = P_2" class="math inline" />, find slope of tangent line at the point, <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20%5Clambda%20%3D%20%5Cfrac%7B3x_1%5E2%2BA%7D%7B2y_1%7D" alt="\lambda = \frac{3x_1^2+A}{2y_1}" title="\lambda = \frac{3x_1^2+A}{2y_1}" class="math inline" /></li>
+</ul>
+<p>Calculate intersection of line <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20L" alt="L" title="L" class="math inline" /> with the curve and reflect that point across the x-axis: <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20x_3%3D%5Clambda%5E2-x_1-x_2" alt="x_3=\lambda^2-x_1-x_2" title="x_3=\lambda^2-x_1-x_2" class="math inline" /> and <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20y_3%3D%20%5Clambda%28x_1-x_3%29-y_1" alt="y_3= \lambda(x_1-x_3)-y_1" title="y_3= \lambda(x_1-x_3)-y_1" class="math inline" /></p>
+</div>
+<div id="scalar-multiplication" class="slide section level1">
+<h1>Scalar Multiplication</h1>
+<p>Given a point <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20P" alt="P" title="P" class="math inline" /> on the curve and an integer <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20n" alt="n" title="n" class="math inline" />, find <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20nP" alt="nP" title="nP" class="math inline" />.</p>
+<p>Naive method: add <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20P" alt="P" title="P" class="math inline" /> to itself <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20n" alt="n" title="n" class="math inline" /> times.</p>
+<p>Cost: expensive because <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20n" alt="n" title="n" class="math inline" /> could be large, 256 bits.</p>
+</div>
+<div id="scalar-multiplication-using-double-and-add" class="slide section level1">
+<h1>Scalar Multiplication Using Double and Add</h1>
+<p>Example: <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20y%5E2%3Dx%5E3%2B14x%2B19%2C%20%5C%20p%3D3623%2C%20%5C%20P%3D%286%2C730%29" alt="y^2=x^3+14x+19, \ p=3623, \ P=(6,730)" title="y^2=x^3+14x+19, \ p=3623, \ P=(6,730)" class="math inline" /></p>
+<p>Want to find <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20nP" alt="nP" title="nP" class="math inline" /> where <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20n%3D2489%3D%28100110111001%29_b" alt="n=2489=(100110111001)_b" title="n=2489=(100110111001)_b" class="math inline" />.</p>
+<p>We can write <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20n" alt="n" title="n" class="math inline" /> as: <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Cdisplaystyle%20n%20%3D%202%5E0%2B2%5E3%2B2%5E4%2B2%5E5%2B2%5E7%2B2%5E8%2B2%5E%7B11%7D" alt="n = 2^0+2^3+2^4+2^5+2^7+2^8+2^{11}" title="n = 2^0+2^3+2^4+2^5+2^7+2^8+2^{11}" class="math display" /></p>
+<p>The algorithm:</p>
+<ul class="incremental">
+<li>Doubles the point <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20P" alt="P" title="P" class="math inline" /> and keeps doubling</li>
+<li>Adds the doubles whenever the <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20i%5E%7Bth%7D" alt="i^{th}" title="i^{th}" class="math inline" /> bit of <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20n" alt="n" title="n" class="math inline" /> is 1</li>
+</ul>
+<p><em>Total cost:</em> 11 doublings and 6 additions.</p>
+</div>
+<div id="scalar-multiplication-using-ternary-expansion" class="slide section level1">
+<h1>Scalar Multiplication Using Ternary Expansion</h1>
+<p>Example: <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20y%5E2%3Dx%5E3%2B14x%2B19%2C%20%5C%20p%3D3623%2C%20%5C%20P%3D%286%2C730%29" alt="y^2=x^3+14x+19, \ p=3623, \ P=(6,730)" title="y^2=x^3+14x+19, \ p=3623, \ P=(6,730)" class="math inline" /></p>
+<p>Want to find <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20nP" alt="nP" title="nP" class="math inline" /> where <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20n%3D2489%3D%28100110111001%29_b" alt="n=2489=(100110111001)_b" title="n=2489=(100110111001)_b" class="math inline" />.</p>
+<p>Instead of binary expansion of <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20n" alt="n" title="n" class="math inline" />, notice: <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Cdisplaystyle%202%5E3%2B2%5E4%2B2%5E5%20%3D%202%5E3%281%2B2%2B2%5E2%29%20%3D%202%5E3%282%5E3-1%29%20%3D%202%5E6-2%5E3" alt="2^3+2^4+2^5 = 2^3(1+2+2^2) = 2^3(2^3-1) = 2^6-2^3" title="2^3+2^4+2^5 = 2^3(1+2+2^2) = 2^3(2^3-1) = 2^6-2^3" class="math display" /></p>
+<p>Substitute back: <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Cdisplaystyle%20n%20%3D%202%5E0-2%5E3%2B2%5E6%2B2%5E7%2B2%5E8%2B2%5E%7B11%7D" alt="n = 2^0-2^3+2^6+2^7+2^8+2^{11}" title="n = 2^0-2^3+2^6+2^7+2^8+2^{11}" class="math display" /></p>
+<p>Continue substituing: <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Cdisplaystyle%20n%20%3D%202%5E0-2%5E3-2%5E6%2B2%5E9%2B2%5E%7B11%7D" alt="n = 2^0-2^3-2^6+2^9+2^{11}" title="n = 2^0-2^3-2^6+2^9+2^{11}" class="math display" /></p>
+<p><em>Total cost:</em> 11 doublings, 4 additions, since on an elliptic curve, <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Cdisplaystyle%20P_1-P_2%20%3D%20%28x_1%2Cy_1%29%2B%28x_2%2C-y_2%29" alt="P_1-P_2 = (x_1,y_1)+(x_2,-y_2)" title="P_1-P_2 = (x_1,y_1)+(x_2,-y_2)" class="math display" /></p>
+</div>
+<div id="ternary-implementation" class="slide section level1">
+<h1>Ternary Implementation</h1>
+<ul class="incremental">
+<li><img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20n" alt="n" title="n" class="math inline" /> comes as <code>[]byte</code> so it has to be unpacked to <code>[]int8</code>, we need -1, 0, 1 values</li>
+<li>For ease of computations, unpack <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20n" alt="n" title="n" class="math inline" /> so that the lowest bit is to the left</li>
+<li>Identify and substitute contiguous group of 1s with length <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20%5Cgeq%202" alt="\geq 2" title="\geq 2" class="math inline" />, “bad groups”:
+<ul class="incremental">
+<li>Use <code>s</code> to mark where the bad group starts</li>
+<li>Use <code>t</code> to mark how many 1s are in the group</li>
+<li>When encounter a 1-bit, check if this is a new group (the previous bit is 0), if it is, set <code>s=1</code>, but always increment <code>t</code></li>
+<li>When encounter a 0-bit, check if we’re in a bad group (<code>t&gt;2</code>), if we are then the group has come to an end, flip the appropriate bits</li>
+<li>If not in a bad group, e.g. only saw 010, reset the group length <code>t</code></li>
+</ul></li>
+</ul>
+</div>
+<div id="ternary-implementation-cost" class="slide section level1">
+<h1>Ternary Implementation Cost</h1>
+<p>Main steps:</p>
+<ul class="incremental">
+<li>Unpack and preprocess <code>n</code>, get array of <code>trits</code> (ternary digits)</li>
+<li>Use double and add/subtract to calcualte <code>nP</code></li>
+</ul>
+<p>Unpacking takes 1 pass and preprocess takes another pass. Typical <code>n</code> for industry parameter is 256 bits, not too bad for both time and storage.</p>
+<p>Still have to do same amount of doublings.</p>
+<p>How many additions can we save?</p>
+<ul class="incremental">
+<li>After preprocessing, there are no contiguous groups of 1s with length <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20%5Cgeq%202" alt="\geq 2" title="\geq 2" class="math inline" /></li>
+<li>So at most <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20%5Cfrac%7B1%7D%7B2%7D" alt="\frac{1}{2}" title="\frac{1}{2}" class="math inline" /> of bits are non-zero (could be 1 or -1)</li>
+<li>Maximum number of additions is <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20%5Cfrac%7B1%7D%7B2%7Dlog%28n%29" alt="\frac{1}{2}log(n)" title="\frac{1}{2}log(n)" class="math inline" /></li>
+</ul>
+</div>
+<div id="demonstration" class="slide section level1">
+<h1>Demonstration</h1>
+<p>Two types of tests: small test case above and industry parameter.</p>
+<p>Industry-size test:</p>
+<ul class="incremental">
+<li>Use P-256 curve <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20y%5E2%20%3D%20x%5E3-3x%2Bb" alt="y^2 = x^3-3x+b" title="y^2 = x^3-3x+b" class="math inline" /></li>
+<li>Parameters: <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20b" alt="b" title="b" class="math inline" />, <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20p" alt="p" title="p" class="math inline" /> and base point from golang source code</li>
+<li>Point <img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20P" alt="P" title="P" class="math inline" /> is a random multiplication of the base point</li>
+<li><img style="vertical-align:middle" src="https://latex.codecogs.com/png.latex?%5Ctextstyle%20n" alt="n" title="n" class="math inline" /> is random <code>[]byte</code></li>
+<li>Comparison of double and add vs ternary expansion in terms of additions.</li>
+</ul>
+</div>
+<div id="architectural-remarks" class="slide section level1">
+<h1>Architectural Remarks</h1>
+<ul class="incremental">
+<li>Golang ECC lib has nice API, follow it</li>
+<li>Points on curve are struct of type <code>(*big.Int, *big.Int)</code></li>
+<li>Point of infinity is denoted <code>(0,0)</code> even though it might not be on the curve</li>
+<li><code>Add</code> function checks if either of the points are <code>(0,0)</code>, otherwise, addition will not be accurate.</li>
+</ul>
+</div>
+<div id="wishlist" class="slide section level1">
+<h1>Wishlist</h1>
+<ul class="incremental">
+<li>Both <code>ScalarMult</code> by Double and Add and Ternary Expansion are vulnerable against timing attack. Implement fixed time multiplication (Montgomery).</li>
+<li>Need to check that points are on the curve before operations, otherwise vulnerable to attacks.</li>
+<li><code>Add</code> function uses naive slope calculation, could be faster?</li>
+<li>Rename Ternary Expansion to NAF (Non-Adjacent Form) and improve performance.</li>
+</ul>
+</div>
+</body>
+</html>
